@@ -38,9 +38,16 @@ jobs:
       - name: Build Aisha extension
         run: ./gradlew assembleDebug
 
+      - name: List build directory contents
+        run: |
+          echo "Root directory:"
+          ls -R
+          echo "Searching for APK files:"
+          find . -name "*.apk"
+
       - name: Upload built Aisha extension
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: aisha-extension
-          path: build/outputs/apk/debug/*.apk
+          path: "**/*.apk"
           if-no-files-found: warn
