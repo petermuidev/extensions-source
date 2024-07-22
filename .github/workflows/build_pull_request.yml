@@ -32,13 +32,15 @@ jobs:
         with:
           cache-read-only: true
 
+      - name: List available projects
+        run: ./gradlew projects
+
       - name: Build Aisha extension
-        run: |
-          ./gradlew :src:en:aisha:assembleDebug
+        run: ./gradlew assembleDebug
 
       - name: Upload built Aisha extension
         uses: actions/upload-artifact@v3
         with:
           name: aisha-extension
-          path: src/en/aisha/build/outputs/apk/debug/*.apk
+          path: build/outputs/apk/debug/*.apk
           if-no-files-found: warn
