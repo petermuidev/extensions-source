@@ -9,11 +9,6 @@ on:
       - 'src/en/aisha/**'
   workflow_dispatch:
 
-env:
-  CI_CHUNK_SIZE: 1
-  CI_CHUNK_NUM: 0
-  NUM_INDIVIDUAL_MODULES: 1
-
 jobs:
   build_aisha:
     name: Build Aisha extension
@@ -35,7 +30,7 @@ jobs:
 
       - name: Build Aisha extension
         run: |
-          ./gradlew --no-daemon --stacktrace :src:en:aisha:assembleDebug
+          ./gradlew :src:en:aisha:assembleDebug
 
       - name: Upload built Aisha extension
         uses: actions/upload-artifact@v3
