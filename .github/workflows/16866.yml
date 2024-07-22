@@ -1,0 +1,50 @@
+name: Build 168 Extension
+
+on:
+  push:
+    paths:
+      - 'src/th/168/**'
+  pull_request:
+    paths:
+      - 'src/th/168/**'
+  workflow_dispatch:
+
+env:
+  CI_CHUNK_SIZE: '1'
+  CI_CHUNK_NUM: '0'
+
+jobs:
+  build_168:
+    name: Build 168 extension
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: true
+
+      - name: Build 168 extension
+        run: ./gradlew :src:th:168:assembleDebug
+
+      - name: List build directory contents
+        run: |
+          echo "Root directory:"
+          ls -R
+          echo "Searching for APK files:"
+          find . -name "*.apk"
+
+      - name: Upload built 168 extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: 168-extension
+          path: "src/th/168/build/outputs/apk/debug/*.apk"
+          if-no-files-found: warn
