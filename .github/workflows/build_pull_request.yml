@@ -1,18 +1,9 @@
-name: Build Aisha Extension
-
-on:
-  push:
-    paths:
-      - 'src/en/aisha/**'
-  pull_request:
-    paths:
-      - 'src/en/aisha/**'
-  workflow_dispatch:
-
 jobs:
   build_aisha:
     name: Build Aisha extension
     runs-on: ubuntu-latest
+    env:
+      CI_CHUNK_SIZE: '1'  # Set this to an appropriate value
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
