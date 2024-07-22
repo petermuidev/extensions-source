@@ -11,6 +11,8 @@ on:
 
 env:
   CI_CHUNK_SIZE: 1
+  CI_CHUNK_NUM: 0
+  NUM_INDIVIDUAL_MODULES: 1
 
 jobs:
   build_aisha:
