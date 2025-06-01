@@ -1,0 +1,38 @@
+name: Build Manga168 Extension
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/th/manga168/**'  # Only trigger when this extension changes
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Build APK
+      run: |
+        # Build only the Manga168 module
+        cd src/th/manga168
+        ./gradlew assembleDebug
+        
+        # Rename APK for clarity
+        mv build/outputs/apk/debug/*.apk manga168-debug.apk
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: manga168-extension
+        path: src/th/manga168/manga168-debug.apk
