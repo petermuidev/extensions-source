@@ -25,11 +25,12 @@ jobs:
     - name: Build APK
       run: |
         cd src/th/manga168
+        chmod +x gradlew  # Critical permission fix
         ./gradlew assembleDebug
         mv build/outputs/apk/debug/*.apk manga168-debug.apk
         
     - name: Upload APK
-      uses: actions/upload-artifact@v4  # Updated version
+      uses: actions/upload-artifact@v4
       with:
         name: manga168-extension
         path: src/th/manga168/manga168-debug.apk
