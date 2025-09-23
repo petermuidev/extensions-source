@@ -1,0 +1,71 @@
+name: Build single extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      lang:
+        description: Language folder (e.g. th, en)
+        required: true
+        type: string
+      name:
+        description: Extension folder name (e.g. gomanga)
+        required: true
+        type: string
+      sign:
+        description: Sign APK if signing secrets are available
+        required: false
+        default: false
+        type: boolean
+
+permissions: {}
+
+jobs:
+  build:
+    name: Build :src:${{ inputs.lang }}:${{ inputs.name }}:assembleRelease
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+
+      - name: Prepare signing key (optional)
+        if: ${{ inputs.sign == true }}
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+        run: |
+          if [ -n "$SIGNING_KEY" ]; then
+            echo "$SIGNING_KEY" | base64 -d > signingkey.jks
+          else
+            echo "SIGNING_KEY not set; building unsigned APKs"
+          fi
+
+      - name: Build module
+        env:
+          ALIAS: ${{ secrets.ALIAS }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          MODULE=":src:${{ inputs.lang }}:${{ inputs.name }}:assembleRelease"
+          echo "Building $MODULE"
+          ./gradlew "$MODULE"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: apk-${{ inputs.lang }}-${{ inputs.name }}
+          path: '**/*.apk'
+          retention-days: 7
+
+      - name: Clean up CI files
+        if: always()
+        run: rm -f signingkey.jks || true
