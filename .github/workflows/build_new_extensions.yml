@@ -1,0 +1,115 @@
+name: Build newly added extensions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - '.github/workflows/build_new_extensions.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  detect-new-extensions:
+    name: Detect newly added extensions
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.detect.outputs.modules }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - id: detect
+        name: Find added extension modules
+        shell: bash
+        run: |
+          BEFORE_SHA="${{ github.event.before }}"
+          AFTER_SHA="${{ github.sha }}"
+
+          # Fallback for force-push / first push
+          if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            BEFORE_SHA=$(git rev-list --max-parents=0 HEAD | tail -n1)
+          fi
+
+          echo "Comparing $BEFORE_SHA..$AFTER_SHA"
+
+          # Get newly added build.gradle files for modules under src/<lang>/<name>/
+          mapfile -t added_builds < <(git diff --name-status "$BEFORE_SHA" "$AFTER_SHA" \
+            | awk '$1=="A" {print $2}' \
+            | grep -E '^src/[^/]+/[^/]+/build.gradle(\.kts)?$' || true)
+
+          if [ ${#added_builds[@]} -eq 0 ]; then
+            echo "No newly added extension modules detected."
+            echo "modules=[]" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          modules_json="["
+          first=1
+          for file in "${added_builds[@]}"; do
+            # Convert src/th/gomanga/build.gradle -> :src:th:gomanga:assembleRelease
+            lang=$(echo "$file" | cut -d'/' -f2)
+            name=$(echo "$file" | cut -d'/' -f3)
+            gradle_task=":src:${lang}:${name}:assembleRelease"
+            if [ $first -eq 0 ]; then modules_json+=" , "; fi
+            modules_json+="\"$gradle_task\""
+            first=0
+          done
+          modules_json+="]"
+
+          echo "Detected modules: $modules_json"
+          echo "modules=$modules_json" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build (${{ matrix.module }})
+    needs: detect-new-extensions
+    if: ${{ needs.detect-new-extensions.outputs.modules != '[]' && needs.detect-new-extensions.outputs.modules != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: ${{ fromJSON(needs.detect-new-extensions.outputs.modules) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+
+      - name: Prepare signing key (optional)
+        if: ${{ secrets.SIGNING_KEY != '' }}
+        run: echo ${{ secrets.SIGNING_KEY }} | base64 -d > signingkey.jks
+
+      - name: Build module
+        env:
+          ALIAS: ${{ secrets.ALIAS }}
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew ${{ matrix.module }}
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ matrix.module }}
+          path: '**/*.apk'
+          retention-days: 7
+
+      - name: Clean up CI files
+        if: always()
+        run: rm -f signingkey.jks || true
