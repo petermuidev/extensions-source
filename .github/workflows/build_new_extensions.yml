@@ -34,9 +34,9 @@ jobs:
           BEFORE_SHA="${{ github.event.before }}"
           AFTER_SHA="${{ github.sha }}"
 
-          # Fallback for force-push / first push
+          # Fallback for force-push / first push: compare against previous commit only
           if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            BEFORE_SHA=$(git rev-list --max-parents=0 HEAD | tail -n1)
+            BEFORE_SHA=$(git rev-parse HEAD~1 2>/dev/null || echo "$AFTER_SHA")
           fi
 
           echo "Comparing $BEFORE_SHA..$AFTER_SHA"
@@ -44,7 +44,14 @@ jobs:
           # Get newly added build.gradle files for modules under src/<lang>/<name>/
           mapfile -t added_builds < <(git diff --name-status "$BEFORE_SHA" "$AFTER_SHA" \
             | awk '$1=="A" {print $2}' \
-            | grep -E '^src/[^/]+/[^/]+/build.gradle(\.kts)?$' || true)
+            | grep -E '^src/[^/]+/[^/]+/build\.gradle(\.kts)?$' || true)
+
+          # Cap the number of modules to avoid exceeding GitHub matrix limits
+          MAX_MODULES=64
+          if [ ${#added_builds[@]} -gt $MAX_MODULES ]; then
+            echo "Found ${#added_builds[@]} new modules; capping to first $MAX_MODULES to avoid matrix limit"
+            added_builds=("${added_builds[@]:0:$MAX_MODULES}")
+          fi
 
           if [ ${#added_builds[@]} -eq 0 ]; then
             echo "No newly added extension modules detected."
