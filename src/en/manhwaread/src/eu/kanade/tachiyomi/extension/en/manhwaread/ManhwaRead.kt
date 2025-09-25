@@ -50,7 +50,8 @@ class ManhwaRead : HttpSource() {
     override fun popularMangaRequest(page: Int): Request {
         val url = baseUrl.toHttpUrl().newBuilder()
             .addPathSegment("manhwa")
-            .addQueryParameter("m_orderby", "views")
+            .addQueryParameter("sortby", "views")
+            .addQueryParameter("order", "desc")
             .addQueryParameter("page", page.toString())
             .build()
 
@@ -62,6 +63,8 @@ class ManhwaRead : HttpSource() {
     override fun latestUpdatesRequest(page: Int): Request {
         val url = baseUrl.toHttpUrl().newBuilder()
             .addPathSegment("manhwa")
+            .addQueryParameter("sortby", "release")
+            .addQueryParameter("order", "desc")
             .addQueryParameter("page", page.toString())
             .build()
 
@@ -95,7 +98,7 @@ class ManhwaRead : HttpSource() {
         val entries = document.select("div.manga-item.loop-item")
             .mapNotNull { it.toSManga() }
 
-        val hasNextPage = document.selectFirst("a.nextpostslink, .pagination a.next, .wp-pagenavi a.next, .wp-pagenavi a.nextpostslink") != null
+        val hasNextPage = document.selectFirst("a.nextpostslink, .pagination a.next, .wp-pagenavi a.next, .wp-pagenavi a.nextpostslink, link[rel=next]") != null
 
         return MangasPage(entries, hasNextPage)
     }
@@ -120,12 +123,12 @@ class ManhwaRead : HttpSource() {
 
         author = summary?.extractInfo("Author:")
         artist = summary?.extractInfo("Artist:")
-        genre = summary?.select(".manga-genres a span:first-child")
+        genre = summary?.select(".manga-genres a")
             ?.map { it.text().trim() }
             ?.filter { it.isNotBlank() }
             ?.joinToString()
 
-        status = summary?.selectFirst(".manga-status__label span:last-of-type")
+        status = summary?.selectFirst(".manga-status__label")
             ?.text()
             ?.let(::parseStatus)
             ?: SManga.UNKNOWN
@@ -188,7 +191,7 @@ class ManhwaRead : HttpSource() {
             ?: throw Exception("chapterData payload missing")
 
         val chapterPayload = json.decodeFromString<ChapterPayload>(jsonPayload)
-        val decoded = Base64.decode(whitespaceRegex.replace(chapterPayload.data, ""), Base64.DEFAULT)
+        val decoded = decodeChapterData(chapterPayload.data)
         val pages = json.decodeFromString<List<ChapterPage>>(decoded.toString(Charsets.UTF_8))
 
         return pages.mapIndexed { index, page ->
@@ -227,6 +230,13 @@ class ManhwaRead : HttpSource() {
         private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.ENGLISH)
 
         private val whitespaceRegex = Regex("\\s+")
+
+        private fun decodeChapterData(data: String): ByteArray {
+            val sanitized = whitespaceRegex.replace(data, "")
+            val padding = (4 - sanitized.length % 4) % 4
+            val padded = sanitized + "=".repeat(padding)
+            return Base64.decode(padded, Base64.DEFAULT)
+        }
     }
 
     @Serializable
