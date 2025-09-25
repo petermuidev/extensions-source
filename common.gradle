@@ -51,18 +51,32 @@ android {
         }
     }
 
+    def keystoreFile = rootProject.file("signingkey.jks")
+    def hasKeystoreFile = keystoreFile.exists()
+    def keyStorePassword = System.getenv("KEY_STORE_PASSWORD")
+    def keyAliasValue = System.getenv("ALIAS")
+    def keyPasswordValue = System.getenv("KEY_PASSWORD")
+    def hasSigningSecrets = [keyStorePassword, keyAliasValue, keyPasswordValue].every { (it ?: "").trim() }
+
     signingConfigs {
         release {
-            storeFile rootProject.file("signingkey.jks")
-            storePassword System.getenv("KEY_STORE_PASSWORD")
-            keyAlias System.getenv("ALIAS")
-            keyPassword System.getenv("KEY_PASSWORD")
+            if (hasKeystoreFile && hasSigningSecrets) {
+                storeFile keystoreFile
+                storePassword keyStorePassword
+                keyAlias keyAliasValue
+                keyPassword keyPasswordValue
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            if (hasKeystoreFile && hasSigningSecrets) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.lifecycle("${project.path}: release keystore not configured; using debug signing config.")
+                signingConfig signingConfigs.getByName("debug")
+            }
             minifyEnabled false
             vcsInfo.include false
         }
