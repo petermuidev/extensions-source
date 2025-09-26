@@ -10,14 +10,13 @@ import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.util.asJsoup
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.nodes.Element
+import org.json.JSONArray
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.text.Regex
@@ -44,8 +43,6 @@ class ManhwaRead : HttpSource() {
             "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         )
     }
-
-    private val json = Json { ignoreUnknownKeys = true }
 
     override fun popularMangaRequest(page: Int): Request {
         val url = baseUrl.toHttpUrl().newBuilder()
@@ -190,19 +187,23 @@ class ManhwaRead : HttpSource() {
         val jsonPayload = chapterDataRegex.find(scriptData)?.groupValues?.get(1)
             ?: throw Exception("chapterData payload missing")
 
-        val chapterPayload = json.decodeFromString<ChapterPayload>(jsonPayload)
-        val decoded = decodeChapterData(chapterPayload.data)
-        val pages = json.decodeFromString<List<ChapterPage>>(decoded.toString(Charsets.UTF_8))
+        val payload = JSONObject(jsonPayload)
+        val base = payload.getString("base").trimEnd('/')
+        val decodedJson = String(decodeChapterData(payload.getString("data")), Charsets.UTF_8)
+        val pagesArray = JSONArray(decodedJson)
 
-        return pages.mapIndexed { index, page ->
+        return List(pagesArray.length()) { index ->
+            val pageObj = pagesArray.getJSONObject(index)
+            val src = pageObj.getString("src")
             val imageUrl = buildString {
-                append(chapterPayload.base.trimEnd('/'))
+                append(base)
                 append('/')
-                append(page.src.trimStart('/'))
+                append(src.trimStart('/'))
             }
             Page(index, "", imageUrl)
         }
     }
+
 
     override fun imageRequest(page: Page): Request {
         val imageHeaders = headersBuilder()
@@ -239,16 +240,6 @@ class ManhwaRead : HttpSource() {
         }
     }
 
-    @Serializable
-    private data class ChapterPayload(
-        val data: String,
-        val base: String,
-    )
-
-    @Serializable
-    private data class ChapterPage(
-        val src: String,
-    )
 
     private fun String.toRelativeUrl(): String {
         return if (startsWith("http", ignoreCase = true)) {
