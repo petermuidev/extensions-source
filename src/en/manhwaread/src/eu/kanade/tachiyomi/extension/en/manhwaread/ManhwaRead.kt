@@ -14,9 +14,9 @@ import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import okhttp3.Response
-import org.jsoup.nodes.Element
 import org.json.JSONArray
 import org.json.JSONObject
+import org.jsoup.nodes.Element
 import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlin.text.Regex
@@ -204,7 +204,6 @@ class ManhwaRead : HttpSource() {
         }
     }
 
-
     override fun imageRequest(page: Page): Request {
         val imageHeaders = headersBuilder()
             .set("Accept", "image/avif,image/webp,*/*")
@@ -239,7 +238,6 @@ class ManhwaRead : HttpSource() {
             return Base64.decode(padded, Base64.DEFAULT)
         }
     }
-
 
     private fun String.toRelativeUrl(): String {
         return if (startsWith("http", ignoreCase = true)) {
