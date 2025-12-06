@@ -32,7 +32,7 @@ jobs:
       delete: ${{ steps.generate-matrices.outputs.delete }}
     steps:
       - name: Checkout main branch
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -44,12 +44,12 @@ jobs:
           distribution: temurin
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
         with:
           cache-read-only: true
 
       - name: Get last successful CI commit
-        uses: nrwl/nx-set-shas@826660b82addbef3abff5fa871492ebad618c9e1 # v4.3.3
+        uses: nrwl/nx-set-shas@3e9ad7370203c1e93d109be57f3b72eb0eb511b1 # v4.4.0
         with:
           fallback-sha: 4b825dc642cb6eb9a060e54bf8d69288fbee4904 # empty tree
 
@@ -68,7 +68,7 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     steps:
       - name: Checkout main branch
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           persist-credentials: false
 
@@ -79,7 +79,7 @@ jobs:
           distribution: temurin
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
         with:
           cache-read-only: ${{ matrix.chunk.number > 1 }}
 
@@ -97,7 +97,7 @@ jobs:
           ./gradlew $MODULES
 
       - name: Upload APKs (${{ matrix.chunk.number }})
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         if: "github.repository == 'keiyoushi/extensions-source'"
         with:
           name: "individual-apks-${{ matrix.chunk.number }}"
@@ -115,7 +115,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Download APK artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           path: ~/apk-artifacts
 
@@ -126,7 +126,7 @@ jobs:
           distribution: temurin
 
       - name: Checkout main branch
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           ref: main
           path: main
@@ -142,7 +142,7 @@ jobs:
           python ./.github/scripts/create-repo.py
 
       - name: Checkout repo branch
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           repository: keiyoushi/extensions
           token: ${{ secrets.BOT_PAT }}
