@@ -1,0 +1,11 @@
+Problematic extensions:
+- GoManga
+  Installed: 1.4.30 / Available: ?
+  Obsolete: true
+
+--------- beginning of main
+2025-09-26 13:39:44.030 +0700  8071  8071 E ANDR-VIVO-PERF: V1_0::IVPerf::tryGetService failed!
+2025-09-26 13:39:44.030 +0700  8071  8071 E ANDR-VIVO-PERF: error no aidl or hidl 
+2025-09-26 13:39:44.031 +0700  8071  8071 E ANDR-VIVO-PERF: V1_0::IVPerf::tryGetService failed!
+2025-09-26 13:39:44.031 +0700  8071  8071 E ANDR-VIVO-PERF: error no aidl or hidl 
+2025-09-26 13:39:45.329 +0700  8071  8071 E ANDR-VIVO-PERF: V1_0::IVPerf::tryGetService failed!

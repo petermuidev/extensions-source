@@ -1,0 +1,3 @@
+# Netscape cookie file
+.manhwaread.com	TRUE	/	FALSE	0	foo	bar
+.google.com	TRUE	/	FALSE	0	bad	no
